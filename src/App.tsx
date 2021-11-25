@@ -1,25 +1,45 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import styled from 'styled-components';
+import ChatsList from './components/chats-list/ChatsList';
+import ChatInput from './components/main-chat/ChatInput';
+import MainChat from './components/main-chat/MainChat';
+import { updateChat } from './store/actions/ChatActions';
+
+const LayoutContainer = styled.div`
+  display: flex;
+  height: 100vh;
+`;
+const ChatContainer = styled.div`
+  flex-grow: 1;
+`;
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const storageChangeHandler = (e: any) => {
+      // console.log(JSON.parse(e.newValue || ''), e);
+      const newValue = e.newValue;
+      dispatch(updateChat(e.key!, newValue ? JSON.parse(newValue) : []));
+    };
+
+    window.addEventListener('storage', storageChangeHandler);
+
+    return () => {
+      window.removeEventListener('storage', storageChangeHandler);
+    };
+  }, [dispatch]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <LayoutContainer>
+      <ChatsList />
+
+      <ChatContainer>
+        <MainChat />
+        <ChatInput />
+      </ChatContainer>
+    </LayoutContainer>
   );
 }
 
