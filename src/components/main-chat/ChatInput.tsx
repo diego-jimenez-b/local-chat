@@ -44,6 +44,7 @@ const ChatInput = () => {
   const userInputRef = useRef<HTMLTextAreaElement>(null);
   const dispatch = useDispatch();
   const user = useTypedSelector((state) => state.chat.user);
+  const chatName = useTypedSelector((state) => state.chat.currentChatName);
 
   const submitFormHandler: FormEventHandler = (e) => {
     e.preventDefault();
@@ -56,12 +57,16 @@ const ChatInput = () => {
 
     const timestamp = new Date();
     dispatch(
-      sendMessage({
-        id: timestamp.getTime() + user,
-        author: user,
-        date: timestamp.toLocaleTimeString(),
-        text: input,
-      })
+      sendMessage(
+        {
+          id: timestamp.getTime() + user,
+          author: user,
+          date: timestamp.toLocaleTimeString(),
+          text: input,
+        },
+        undefined,
+        chatName
+      )
     );
     userInputRef.current.value = '';
   };

@@ -1,31 +1,47 @@
-import { ChatsListType } from '../../models/models';
+import { ChatsListType, GroupChatType } from '../../models/models';
 import {
+  ADD_USER,
+  CHANGE_CHAT,
   CHANGE_USERNAME,
+  CREATE_NEW_GROUP,
   DELETE_MESSAGE,
-  GROUP,
+  ExistingChatTypes,
+  GROUPS,
   PRIVATE,
   PUBLIC,
+  REMOVE_USER,
   SEND_MESSAGE,
   UPDATE_CHAT,
   USERS,
 } from '../actions/ChatActions';
 import { ChatMessageType } from '../../models/models';
+import { getStorageItem } from '../../helpers/helpers';
 
 interface ChatReducerType extends ChatsListType {
   user: string;
   currentChat: string;
+  currentChatName: string;
   currentChatMessages: ChatMessageType[];
   onlineUsers: string[];
 }
 type ActionType =
-  | { type: typeof SEND_MESSAGE; message: ChatMessageType }
+  | {
+      type: typeof SEND_MESSAGE;
+      chatType: ExistingChatTypes;
+      chatName?: string;
+      message: ChatMessageType;
+    }
   | { type: typeof DELETE_MESSAGE; id: string }
   | { type: typeof CHANGE_USERNAME; newUsername: string }
+  | { type: typeof CHANGE_CHAT; chatType: ExistingChatTypes; chatName?: string }
   | {
       type: typeof UPDATE_CHAT;
       chatType: string;
-      updatedChat: ChatMessageType[];
-    };
+      updatedChat: any[];
+    }
+  | { type: typeof CREATE_NEW_GROUP; groupName: string }
+  | { type: typeof ADD_USER; username: string }
+  | { type: typeof REMOVE_USER; username: string };
 
 const rug = require('random-username-generator');
 const existingUsername = sessionStorage.getItem('username');
@@ -35,19 +51,30 @@ if (!existingUsername) {
   sessionStorage.setItem('username', randomUsername!);
 }
 
-const storagePublicChat = localStorage.getItem(PUBLIC);
-const storageChatGroups = localStorage.getItem(GROUP);
-const storagePrivateChats = localStorage.getItem(PRIVATE);
-const storageOnlineUsers = localStorage.getItem(USERS);
+const storagePublicChat = getStorageItem(PUBLIC);
+const storageChatGroups = getStorageItem(GROUPS);
+const storagePrivateChats = getStorageItem(PRIVATE);
+const storageOnlineUsers = getStorageItem(USERS);
+
+const initialChatGroups: GroupChatType[] = [
+  { name: 'Group-1', chat: [] },
+  { name: 'Group-2', chat: [] },
+  { name: 'Group-3', chat: [] },
+];
+if (storageChatGroups.length === 0) {
+  localStorage.setItem(GROUPS, JSON.stringify(initialChatGroups));
+}
 
 const initialState: ChatReducerType = {
   user: randomUsername!,
   currentChat: PUBLIC,
-  publicChat: storagePublicChat ? JSON.parse(storagePublicChat) : [],
-  chatGroups: storageChatGroups ? JSON.parse(storageChatGroups) : [],
-  privateChats: storagePrivateChats ? JSON.parse(storagePrivateChats) : [],
-  currentChatMessages: storagePublicChat ? JSON.parse(storagePublicChat) : [],
-  onlineUsers: storageOnlineUsers ? JSON.parse(storageOnlineUsers) : [],
+  currentChatName: '',
+  publicChat: storagePublicChat,
+  chatGroups:
+    storageChatGroups.length > 0 ? storageChatGroups : initialChatGroups,
+  privateChats: storagePrivateChats,
+  currentChatMessages: storagePublicChat,
+  onlineUsers: storageOnlineUsers,
 };
 
 export const ChatReducer = (
@@ -66,18 +93,20 @@ export const ChatReducer = (
       };
     }
 
-    if (state.currentChat === GROUP) {
+    if (state.currentChat === GROUPS) {
       const groupChatIndex = state.chatGroups.findIndex(
-        (group) => group.name === state.currentChat
-      )!;
+        (group) => group.name === action.chatName
+      );
       const groupChat = state.chatGroups[groupChatIndex];
 
-      const updatedChat = groupChat!.chat.concat(action.message);
+      console.log(groupChatIndex);
+      const updatedChat = groupChat!.chat!.concat(action.message);
+
       const updatedGroupChat = { ...groupChat, chat: updatedChat };
       let updatedGroups = [...state.chatGroups];
       updatedGroups[groupChatIndex] = updatedGroupChat;
 
-      localStorage.setItem(GROUP, JSON.stringify(updatedGroups));
+      localStorage.setItem(GROUPS, JSON.stringify(updatedGroups));
 
       return {
         ...state,
@@ -85,27 +114,96 @@ export const ChatReducer = (
         currentChatMessages: updatedGroupChat.chat,
       };
     }
-
-    // if (state.currentChat === PUBLIC) {
-    //   const updatedChat = state.publicChat.concat(action.message);
-
-    //   localStorage.setItem(PUBLIC, JSON.stringify(updatedChat));
-
-    //   return {
-    //     ...state,
-    //     publicChat: updatedChat,
-    //   };
-    // }
   }
 
   if (action.type === UPDATE_CHAT) {
-    if (action.chatType === state.currentChat) {
+    const updatedPublicChat =
+      action.chatType === PUBLIC ? action.updatedChat : state.publicChat;
+    const updatedChatGroups =
+      action.chatType === GROUPS ? action.updatedChat : state.chatGroups;
+    const updatedPrivateChats =
+      action.chatType === PRIVATE ? action.updatedChat : state.privateChats;
+    const updatedOnlineUsers =
+      action.chatType === USERS ? action.updatedChat : state.onlineUsers;
+
+    let updatedCurrentChat = state.currentChatMessages;
+    if (state.currentChat === PUBLIC) {
+      updatedCurrentChat = updatedPublicChat;
+    } else if (state.currentChat === GROUPS) {
+      if (!(state.chatGroups.length < action.updatedChat.length)) {
+        const existingChatIndex = updatedChatGroups.findIndex(
+          (chat) => chat.name === state.currentChatName
+        );
+        updatedCurrentChat = updatedChatGroups[existingChatIndex].chat;
+      }
+    } else if (state.currentChat === PRIVATE) {
+      const existingChatIndex = updatedPrivateChats.findIndex(
+        (chat) => chat.name === state.currentChatName
+      );
+      updatedCurrentChat = updatedPrivateChats[existingChatIndex].chat;
+    }
+
+    return {
+      ...state,
+      publicChat: updatedPublicChat,
+      chatGroups: updatedChatGroups,
+      privateChats: updatedPrivateChats,
+      currentChatMessages: updatedCurrentChat,
+      onlineUsers: updatedOnlineUsers,
+    };
+  }
+
+  if (action.type === CHANGE_CHAT) {
+    if (action.chatType === PUBLIC) {
+      const publicChat = getStorageItem(PUBLIC);
       return {
         ...state,
-        publicChat: action.updatedChat,
-        currentChatMessages: action.updatedChat,
+        currentChat: PUBLIC,
+        currentChatName: '',
+        currentChatMessages: publicChat,
       };
     }
+
+    if (action.chatType === GROUPS) {
+      const chatGroups = getStorageItem(GROUPS);
+      return {
+        ...state,
+        currentChat: GROUPS,
+        currentChatName: action.chatName || '',
+        currentChatMessages: chatGroups.find(
+          (group) => group.name === action.chatName
+        ).chat,
+      };
+    }
+  }
+
+  if (action.type === CREATE_NEW_GROUP) {
+    if (state.chatGroups.find((group) => group.name === action.groupName)) {
+      alert(`Group '${action.groupName}' already exists`);
+      return state;
+    }
+
+    const updatedChatGroups = state.chatGroups.concat({
+      name: action.groupName,
+      chat: [],
+    });
+    localStorage.setItem(GROUPS, JSON.stringify(updatedChatGroups));
+
+    return { ...state, chatGroups: updatedChatGroups };
+  }
+
+  if (action.type === ADD_USER) {
+    if (state.onlineUsers.includes(action.username)) return state;
+    const updatedOnlineUsers = state.onlineUsers.concat(action.username);
+    localStorage.setItem(USERS, JSON.stringify(updatedOnlineUsers));
+    return { ...state, onlineUsers: updatedOnlineUsers };
+  }
+  if (action.type === REMOVE_USER) {
+    const updatedOnlineUsers = state.onlineUsers.filter(
+      (user) => user !== action.username
+    );
+    localStorage.setItem(USERS, JSON.stringify(updatedOnlineUsers));
+    return { ...state, onlineUsers: updatedOnlineUsers };
   }
 
   return state;

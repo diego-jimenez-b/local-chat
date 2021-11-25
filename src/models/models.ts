@@ -19,3 +19,8 @@ export interface ChatsListType {
   chatGroups: GroupChatType[];
   privateChats: PrivateChatType[];
 }
+
+export type MessagesArraysType =
+  | ChatMessageType[]
+  | GroupChatType[]
+  | PrivateChatType[];
