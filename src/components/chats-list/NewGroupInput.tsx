@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import styled from 'styled-components';
 import { createNewGroup } from '../../store/actions/ChatActions';
+
+import styled from 'styled-components';
 import Modal from '../UI/Modal';
 
 const Input = styled.input`

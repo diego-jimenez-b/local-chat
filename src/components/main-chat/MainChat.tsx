@@ -1,5 +1,5 @@
-import styled from 'styled-components';
 import { useTypedSelector } from '../../hooks/useTypedSelector';
+import styled from 'styled-components';
 
 interface MessageProps {
   readonly author: boolean;

@@ -1,8 +1,8 @@
 import { FormEventHandler, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import styled from 'styled-components';
 import { useTypedSelector } from '../../hooks/useTypedSelector';
 import { sendMessage } from '../../store/actions/ChatActions';
+import styled from 'styled-components';
 
 const Form = styled.form`
   background-color: #dddddd;
@@ -67,16 +67,12 @@ const ChatInput = () => {
 
     const timestamp = new Date();
     dispatch(
-      sendMessage(
-        {
-          id: timestamp.getTime() + user,
-          author: user,
-          date: timestamp.toLocaleTimeString(),
-          text: input,
-        },
-        undefined,
-        chatName
-      )
+      sendMessage({
+        id: timestamp.getTime() + user,
+        author: user,
+        date: timestamp.toLocaleTimeString(),
+        text: input,
+      })
     );
     userInputRef.current.value = '';
   };

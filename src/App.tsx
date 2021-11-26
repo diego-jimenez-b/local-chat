@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { addUser, removeUser, updateChat } from './store/actions/ChatActions';
+
 import styled from 'styled-components';
 import ChatsList from './components/chats-list/ChatsList';
 import ChatInput from './components/main-chat/ChatInput';
 import MainChat from './components/main-chat/MainChat';
-import { useTypedSelector } from './hooks/useTypedSelector';
-import { addUser, removeUser, updateChat } from './store/actions/ChatActions';
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -17,10 +17,9 @@ const ChatContainer = styled.div`
 
 function App() {
   const dispatch = useDispatch();
-  const username = useTypedSelector((state) => state.chat.user);
 
   useEffect(() => {
-    dispatch(addUser(username));
+    dispatch(addUser());
 
     const storageChangeHandler = (e: any) => {
       const newValue = e.newValue;
@@ -28,7 +27,7 @@ function App() {
     };
     const removeUsernameHandler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      dispatch(removeUser(username));
+      dispatch(removeUser());
     };
 
     window.addEventListener('storage', storageChangeHandler);
@@ -38,7 +37,7 @@ function App() {
       window.removeEventListener('storage', storageChangeHandler);
       window.removeEventListener('beforeunload', removeUsernameHandler);
     };
-  }, [dispatch, username]);
+  }, [dispatch]);
 
   return (
     <LayoutContainer>

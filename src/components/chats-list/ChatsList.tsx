@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import styled from 'styled-components';
 import { useTypedSelector } from '../../hooks/useTypedSelector';
 import {
   changeChat,
   ExistingChatTypes,
   startPrivateChat,
 } from '../../store/actions/ChatActions';
+
+import styled from 'styled-components';
 import NewGroupInput from './NewGroupInput';
 
 const StyledChatsList = styled.div`
@@ -70,7 +71,7 @@ const ChatsList = () => {
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
 
-  const changeChatHandler = (type: ExistingChatTypes, chatName?: string) => {
+  const changeChatHandler = (type: ExistingChatTypes, chatName: string) => {
     dispatch(changeChat(type, chatName));
   };
 
@@ -92,7 +93,7 @@ const ChatsList = () => {
       <h1>name: {username}</h1>
 
       <ChatsSection>
-        <h2 onClick={() => changeChatHandler('PUBLIC')}>Public</h2>
+        <h2 onClick={() => changeChatHandler('PUBLIC', '')}>Public</h2>
       </ChatsSection>
 
       <ChatsSection>
