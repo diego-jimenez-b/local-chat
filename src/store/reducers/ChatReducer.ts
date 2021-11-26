@@ -1,4 +1,8 @@
-import { ChatsListType, GroupChatType } from '../../models/models';
+import {
+  ChatsListType,
+  GroupChatType,
+  PrivateChatType,
+} from '../../models/models';
 import {
   ADD_USER,
   CHANGE_CHAT,
@@ -11,6 +15,7 @@ import {
   PUBLIC,
   REMOVE_USER,
   SEND_MESSAGE,
+  START_PRIVATE_CHAT,
   UPDATE_CHAT,
   USERS,
 } from '../actions/ChatActions';
@@ -40,6 +45,7 @@ type ActionType =
       updatedChat: any[];
     }
   | { type: typeof CREATE_NEW_GROUP; groupName: string }
+  | { type: typeof START_PRIVATE_CHAT; username: string }
   | { type: typeof ADD_USER; username: string }
   | { type: typeof REMOVE_USER; username: string };
 
@@ -99,7 +105,6 @@ export const ChatReducer = (
       );
       const groupChat = state.chatGroups[groupChatIndex];
 
-      console.log(groupChatIndex);
       const updatedChat = groupChat!.chat!.concat(action.message);
 
       const updatedGroupChat = { ...groupChat, chat: updatedChat };
@@ -111,6 +116,27 @@ export const ChatReducer = (
       return {
         ...state,
         chatGroups: updatedGroups,
+        currentChatMessages: updatedGroupChat.chat,
+      };
+    }
+
+    if (state.currentChat === PRIVATE) {
+      const chatIndex = state.privateChats.findIndex((group) =>
+        group.members.includes(action.chatName!)
+      );
+      const chat = state.privateChats[chatIndex];
+
+      const updatedChat = chat.chat.concat(action.message);
+
+      const updatedGroupChat = { ...chat, chat: updatedChat };
+      let updatedPrivateChats = [...state.privateChats];
+      updatedPrivateChats[chatIndex] = updatedGroupChat;
+
+      localStorage.setItem(PRIVATE, JSON.stringify(updatedPrivateChats));
+
+      return {
+        ...state,
+        privateChats: updatedPrivateChats,
         currentChatMessages: updatedGroupChat.chat,
       };
     }
@@ -137,9 +163,10 @@ export const ChatReducer = (
         updatedCurrentChat = updatedChatGroups[existingChatIndex].chat;
       }
     } else if (state.currentChat === PRIVATE) {
-      const existingChatIndex = updatedPrivateChats.findIndex(
-        (chat) => chat.name === state.currentChatName
+      const existingChatIndex = updatedPrivateChats.findIndex((chat) =>
+        chat.members.includes(state.currentChatName)
       );
+
       updatedCurrentChat = updatedPrivateChats[existingChatIndex].chat;
     }
 
@@ -175,6 +202,24 @@ export const ChatReducer = (
         ).chat,
       };
     }
+
+    if (action.chatType === PRIVATE) {
+      const updatedChat = state.privateChats.find(
+        (chat) =>
+          chat.members.includes(state.user) &&
+          chat.members.includes(action.chatName!)
+      );
+
+      console.log(state.privateChats);
+      console.log(updatedChat);
+
+      return {
+        ...state,
+        currentChat: PRIVATE,
+        currentChatName: action.chatName!,
+        currentChatMessages: updatedChat!.chat,
+      };
+    }
   }
 
   if (action.type === CREATE_NEW_GROUP) {
@@ -190,6 +235,30 @@ export const ChatReducer = (
     localStorage.setItem(GROUPS, JSON.stringify(updatedChatGroups));
 
     return { ...state, chatGroups: updatedChatGroups };
+  }
+
+  if (action.type === START_PRIVATE_CHAT) {
+    if (
+      state.privateChats.find(
+        (chat) =>
+          chat.members.includes(action.username) &&
+          chat.members.includes(state.user)
+      )
+    )
+      return state;
+
+    const newPrivateChat: PrivateChatType = {
+      members: [state.user, action.username],
+      chat: [],
+    };
+    const updatedPrivateChats = state.privateChats.concat(newPrivateChat);
+
+    localStorage.setItem(PRIVATE, JSON.stringify(updatedPrivateChats));
+
+    return {
+      ...state,
+      privateChats: updatedPrivateChats,
+    };
   }
 
   if (action.type === ADD_USER) {

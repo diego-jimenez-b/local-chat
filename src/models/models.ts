@@ -10,8 +10,9 @@ export interface GroupChatType {
   chat: ChatMessageType[];
 }
 
-export interface PrivateChatType extends GroupChatType {
+export interface PrivateChatType {
   members: [string, string];
+  chat: ChatMessageType[];
 }
 
 export interface ChatsListType {

@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { useTypedSelector } from '../../hooks/useTypedSelector';
-import { changeChat, ExistingChatTypes } from '../../store/actions/ChatActions';
+import {
+  changeChat,
+  ExistingChatTypes,
+  startPrivateChat,
+} from '../../store/actions/ChatActions';
 import NewGroupInput from './NewGroupInput';
 
 const StyledChatsList = styled.div`
@@ -69,11 +73,19 @@ const ChatsList = () => {
   const changeChatHandler = (type: ExistingChatTypes, chatName?: string) => {
     dispatch(changeChat(type, chatName));
   };
+
+  const startPrivateChatHandler = (username: string) => {
+    dispatch(startPrivateChat(username));
+  };
+
   const toggleModalHandler = () => {
     setShowModal((prevstate) => !prevstate);
   };
 
   const otherOnlineUsers = onlineUsers.filter((user) => user !== username);
+  const currentPrivateChats = privateChats.filter((chat) =>
+    chat.members.includes(username)
+  );
 
   return (
     <StyledChatsList>
@@ -106,19 +118,28 @@ const ChatsList = () => {
       <ChatsSection>
         <h2>Private chats</h2>
 
-        {privateChats.length > 0 && (
+        {currentPrivateChats.length > 0 && (
           <ChatGroup>
-            {privateChats.map((group) => (
+            {currentPrivateChats.map((group) => (
               <li
-                key={group.name}
-                onClick={() => changeChatHandler('PRIVATE', group.name)}
+                key={group.members.toString()}
+                onClick={() =>
+                  changeChatHandler(
+                    'PRIVATE',
+                    group.members[0] !== username
+                      ? group.members[0]
+                      : group.members[1]
+                  )
+                }
               >
-                {group.name}
+                {group.members[0] !== username
+                  ? group.members[0]
+                  : group.members[1]}
               </li>
             ))}
           </ChatGroup>
         )}
-        {privateChats.length === 0 && (
+        {currentPrivateChats.length === 0 && (
           <span>No private conversations found</span>
         )}
       </ChatsSection>
@@ -128,7 +149,12 @@ const ChatsList = () => {
         {otherOnlineUsers.length > 0 && (
           <ul>
             {otherOnlineUsers.map((user) => (
-              <li key={`id_${user}`}>{user}</li>
+              <li
+                key={`id_${user}`}
+                onClick={() => startPrivateChatHandler(user)}
+              >
+                {user}
+              </li>
             ))}
           </ul>
         )}

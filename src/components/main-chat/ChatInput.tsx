@@ -39,12 +39,22 @@ const Button = styled.button`
     background-color: #970097;
   }
 `;
+const ChatName = styled.span`
+  position: absolute;
+  top: -30px;
+  left: 10px;
+  font-weight: bold;
+  z-index: 5;
+`;
 
 const ChatInput = () => {
-  const userInputRef = useRef<HTMLTextAreaElement>(null);
+  const {
+    user,
+    currentChatName: chatName,
+    currentChat,
+  } = useTypedSelector((state) => state.chat);
   const dispatch = useDispatch();
-  const user = useTypedSelector((state) => state.chat.user);
-  const chatName = useTypedSelector((state) => state.chat.currentChatName);
+  const userInputRef = useRef<HTMLTextAreaElement>(null);
 
   const submitFormHandler: FormEventHandler = (e) => {
     e.preventDefault();
@@ -75,6 +85,11 @@ const ChatInput = () => {
     <Form onSubmit={submitFormHandler}>
       <Input ref={userInputRef} placeholder='Send a message' />
       <Button type='submit'>Send</Button>
+
+      <ChatName>
+        {currentChat}
+        {chatName ? `: ${chatName}` : ''}
+      </ChatName>
     </Form>
   );
 };
