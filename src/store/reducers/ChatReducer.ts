@@ -37,12 +37,12 @@ type ActionType =
       chatType: ExistingChatTypes;
       updatedChat: any[];
     }
-  | { type: typeof CHANGE_USERNAME; newUsername: string }
   | { type: typeof CHANGE_CHAT; chatType: ExistingChatTypes; chatName: string }
   | { type: typeof CREATE_NEW_GROUP; groupName: string }
   | { type: typeof START_PRIVATE_CHAT; username: string }
   | { type: typeof ADD_USER }
-  | { type: typeof REMOVE_USER };
+  | { type: typeof REMOVE_USER }
+  | { type: typeof CHANGE_USERNAME; newUsername: string };
 
 // GETS USERNAME OR CREATES IT AND SAVES IT (sessionStorage)
 const rug = require('random-username-generator');
@@ -150,6 +150,7 @@ export const ChatReducer = (
     const updatedOnlineUsers =
       action.chatType === USERS ? action.updatedChat : state.onlineUsers;
 
+    let nameChanged = false;
     let updatedCurrentChat = state.currentChatMessages;
     if (state.currentChat === PUBLIC) {
       updatedCurrentChat = updatedPublicChat;
@@ -164,11 +165,18 @@ export const ChatReducer = (
           chat.members.includes(state.currentChatName) &&
           chat.members.includes(state.user)
       );
-      updatedCurrentChat = updatedPrivateChats[existingChatIndex].chat;
+      if (existingChatIndex !== -1)
+        updatedCurrentChat = updatedPrivateChats[existingChatIndex].chat;
+      else {
+        nameChanged = true;
+        updatedCurrentChat = updatedPublicChat;
+      }
     }
 
     return {
       ...state,
+      currentChat: nameChanged ? PUBLIC : state.currentChat,
+      currentChatName: nameChanged ? '' : state.currentChatName,
       publicChat: updatedPublicChat,
       chatGroups: updatedChatGroups,
       privateChats: updatedPrivateChats,
@@ -270,6 +278,73 @@ export const ChatReducer = (
 
     localStorage.setItem(USERS, JSON.stringify(updatedOnlineUsers));
     return { ...state, onlineUsers: updatedOnlineUsers };
+  }
+
+  if (action.type === CHANGE_USERNAME) {
+    if (action.newUsername.trim() === '') return state;
+
+    const updatedPublicChat = state.publicChat.map((message) => {
+      if (message.author !== state.user) return message;
+      return { ...message, author: action.newUsername };
+    });
+
+    const updatedChatGroups = [...state.chatGroups];
+    for (let i = 0; i < updatedChatGroups.length; i++) {
+      const group = updatedChatGroups[i];
+
+      const groupChat = [...group.chat];
+      for (let i = 0; i < groupChat.length; i++) {
+        if (groupChat[i].author === state.user)
+          groupChat[i] = { ...groupChat[i], author: action.newUsername };
+      }
+
+      updatedChatGroups[i] = {
+        name: updatedChatGroups[i].name,
+        chat: groupChat,
+      };
+    }
+
+    const updatedPrivateChats = [...state.privateChats];
+    for (let i = 0; i < updatedPrivateChats.length; i++) {
+      let group = updatedPrivateChats[i];
+
+      const updatedMembers: [string, string] = [...group.members];
+      if (updatedMembers[0] === state.user)
+        updatedMembers[0] = action.newUsername;
+      else if (updatedMembers[1] === state.user)
+        updatedMembers[1] = action.newUsername;
+
+      const groupChat = [...group.chat];
+      for (let i = 0; i < groupChat.length; i++) {
+        if (groupChat[i].author === state.user)
+          groupChat[i] = { ...groupChat[i], author: action.newUsername };
+      }
+
+      updatedPrivateChats[i] = { members: updatedMembers, chat: groupChat };
+    }
+
+    const updatedOnlineUsers = state.onlineUsers.map((user) =>
+      user === state.user ? action.newUsername : user
+    );
+
+    localStorage.setItem(PUBLIC, JSON.stringify(updatedPublicChat));
+    localStorage.setItem(GROUPS, JSON.stringify(updatedChatGroups));
+    localStorage.setItem(PRIVATE, JSON.stringify(updatedPrivateChats));
+    localStorage.setItem(USERS, JSON.stringify(updatedOnlineUsers));
+    sessionStorage.setItem('username', action.newUsername);
+
+    alert('name changed succesfully');
+
+    return {
+      user: action.newUsername,
+      publicChat: updatedPublicChat,
+      chatGroups: updatedChatGroups,
+      privateChats: updatedPrivateChats,
+      onlineUsers: updatedOnlineUsers,
+      currentChat: PUBLIC,
+      currentChatName: '',
+      currentChatMessages: updatedPublicChat,
+    };
   }
 
   return state;

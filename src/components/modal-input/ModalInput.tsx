@@ -1,8 +1,11 @@
 import { useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { createNewGroup } from '../../store/actions/ChatActions';
 
 import styled from 'styled-components';
+import {
+  changeUsername,
+  createNewGroup,
+} from '../../store/actions/ChatActions';
 import Modal from '../UI/Modal';
 
 const Input = styled.input`
@@ -27,7 +30,19 @@ const Button = styled.button`
   }
 `;
 
-const NewGroupInput = ({ onClose }: { onClose: () => void }) => {
+interface ModalInputProps {
+  onClose: () => void;
+  placeholder: string;
+  btnText: string;
+  changeType: 'NAME' | 'GROUP';
+}
+
+const ModalInput = ({
+  onClose,
+  changeType,
+  placeholder,
+  btnText,
+}: ModalInputProps) => {
   const dispatch = useDispatch();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,16 +50,18 @@ const NewGroupInput = ({ onClose }: { onClose: () => void }) => {
     const input = inputRef.current?.value || '';
     if (input.trim() === '') return;
 
-    dispatch(createNewGroup(input));
+    if (changeType === 'GROUP') dispatch(createNewGroup(input));
+    if (changeType === 'NAME') dispatch(changeUsername(input));
+
     onClose();
   };
 
   return (
     <Modal onClose={onClose}>
-      <Input ref={inputRef} type='text' placeholder='enter a new group name' />
-      <Button onClick={addGroupHandler}>Add</Button>
+      <Input ref={inputRef} type='text' placeholder={placeholder} />
+      <Button onClick={addGroupHandler}>{btnText}</Button>
     </Modal>
   );
 };
 
-export default NewGroupInput;
+export default ModalInput;

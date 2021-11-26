@@ -8,8 +8,8 @@ import {
 } from '../../store/actions/ChatActions';
 
 import styled from 'styled-components';
-import NewGroupInput from './NewGroupInput';
 import SearchInput from './SearchInput';
+import ModalInput from '../modal-input/ModalInput';
 
 const StyledChatsList = styled.div`
   background-color: #670d7e;
@@ -19,9 +19,12 @@ const StyledChatsList = styled.div`
 
   & > h1 {
     display: block;
-    margin: 30px 0;
+    margin: 30px 0 20px;
     padding: 0 5px;
     font-size: 20px;
+  }
+  & > button {
+    margin-bottom: 10px;
   }
 `;
 const ChatsSection = styled.div`
@@ -72,7 +75,9 @@ const ChatsList = () => {
     onlineUsers,
   } = useTypedSelector((state) => state.chat);
   const dispatch = useDispatch();
-  const [showModal, setShowModal] = useState(false);
+
+  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [showNameChangeModal, setShowNameChangeModal] = useState(false);
   const [chatGroupsFilter, setGroupsFilter] = useState('');
   const [privateChatsFilter, setPrivateChatsFilter] = useState('');
 
@@ -91,8 +96,11 @@ const ChatsList = () => {
     setPrivateChatsFilter(input.toLowerCase());
   };
 
-  const toggleModalHandler = () => {
-    setShowModal((prevstate) => !prevstate);
+  const toggleGroupModalHandler = () => {
+    setShowNewGroupModal((prevstate) => !prevstate);
+  };
+  const toggleNameModalHandler = () => {
+    setShowNameChangeModal((prevstate) => !prevstate);
   };
 
   const chatGroups = reducerChatGroups.filter((group) =>
@@ -112,6 +120,7 @@ const ChatsList = () => {
   return (
     <StyledChatsList>
       <h1>name: {username}</h1>
+      <Button onClick={toggleNameModalHandler}>change username</Button>
 
       <ChatsSection>
         <h2 onClick={() => changeChatHandler('PUBLIC', '')}>Public</h2>
@@ -138,7 +147,7 @@ const ChatsList = () => {
         )}
         {chatGroups.length === 0 && <span>No groups found...</span>}
 
-        <Button onClick={toggleModalHandler}>+ create new group</Button>
+        <Button onClick={toggleGroupModalHandler}>+ create new group</Button>
       </ChatsSection>
 
       <ChatsSection>
@@ -191,7 +200,22 @@ const ChatsList = () => {
         {otherOnlineUsers.length === 0 && <span>No other user online</span>}
       </ChatsSection>
 
-      {showModal && <NewGroupInput onClose={toggleModalHandler} />}
+      {showNewGroupModal && (
+        <ModalInput
+          changeType='GROUP'
+          onClose={toggleGroupModalHandler}
+          placeholder='Enter a new group name'
+          btnText='create group'
+        />
+      )}
+      {showNameChangeModal && (
+        <ModalInput
+          changeType='NAME'
+          onClose={toggleNameModalHandler}
+          placeholder='Enter a new username'
+          btnText='change username'
+        />
+      )}
     </StyledChatsList>
   );
 };
